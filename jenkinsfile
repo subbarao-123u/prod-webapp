@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = 'subbu45340/prod-webapp'
-        VM_IP = '172.31.10.17'  // Your production VM public IP
+        VM_IP = '18.60.255.245'  // Your production VM public IP
         VM_USER = 'ubuntu'
         APP_PORT = '8081'        // Avoid jenkins port 8080
     }
