@@ -25,19 +25,17 @@ pipeline {
                 }
             }
         }
-        stage('Deploy to Production') {
+        stage('Deploy') {
             steps {
-                withCredentials([file(credentialsId: 'my.pem', variable: 'PEM_FILE')]) {  // Your SSH key ID
-                    sh """
-                        ssh -i \$PEM_FILE -o StrictHostKeyChecking=no ${VM_USER}@${VM_IP} '
-                            docker pull ${DOCKER_IMAGE}:latest &&
-                            docker stop prod-webapp || true &&
-                            docker rm prod-webapp || true &&
-                            docker run -d -p ${APP_PORT}:5000 --restart unless-stopped --name prod-webapp ${DOCKER_IMAGE}:latest &&
-                            sleep 3 &&
-                            curl -f http://localhost:${APP_PORT}/health || exit 1
-                        '
-                    """
+                sh '''
+                   docker pull subbu45340/prod-webapp:latest &&
+                   docker stop prod-webapp || true &&
+                   docker rm prod-webapp || true &&
+                   docker run -d -p 8081:5000 --restart unless-stopped --name prod-webapp subbu45340/prod-webapp:latest &&
+                   sleep 5 &&
+                   curl -f http://localhost:8081/health || exit 1
+
+                """
                 }
             }
         }
