@@ -2,9 +2,9 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = 'subbu45340/prod-webapp'
-        VM_IP = '18.60.255.245'  // Your production VM public IP
+        VM_IP = '18.60.255.245'
         VM_USER = 'ubuntu'
-        APP_PORT = '8081'        // Avoid jenkins port 8080
+        APP_PORT = '8081'
     }
     stages {
         stage('Build') {
@@ -16,7 +16,7 @@ pipeline {
         }
         stage('Push') {
             steps {
-                withDockerRegistry([credentialsId: 'subbu-docker-creds', url: '']) {  // Your Docker Hub cred ID
+                withDockerRegistry([credentialsId: 'subbu-docker-creds', url: '']) {
                     script {
                         def image = docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}")
                         image.push()
@@ -27,15 +27,17 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                sh '''
-                   docker pull subbu45340/prod-webapp:latest &&
-                   docker stop prod-webapp || true &&
-                   docker rm prod-webapp || true &&
-                   docker run -d -p 8081:5000 --restart unless-stopped --name prod-webapp subbu45340/prod-webapp:latest &&
-                   sleep 5 &&
-                   curl -f http://localhost:8081/health || exit 1
-
-                """
+                withCredentials([file(credentialsId: 'my.pem', variable: 'PEM_FILE')]) {
+                    sh '''
+                        ssh -i $PEM_FILE -o StrictHostKeyChecking=no ${VM_USER}@${VM_IP} "
+                            docker pull ${DOCKER_IMAGE}:latest &&
+                            docker stop prod-webapp || true &&
+                            docker rm prod-webapp || true &&
+                            docker run -d -p ${APP_PORT}:5000 --restart unless-stopped --name prod-webapp ${DOCKER_IMAGE}:latest &&
+                            sleep 5 &&
+                            curl -f http://localhost:${APP_PORT}/health || exit 1
+                        "
+                    '''
                 }
             }
         }
@@ -46,4 +48,5 @@ pipeline {
         }
     }
 }
+
 
